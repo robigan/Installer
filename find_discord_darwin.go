@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	path "path/filepath"
 	"strings"
 )
@@ -17,6 +18,15 @@ var macosNames = map[string]string{
 	"ptb":    "Discord PTB.app",
 	"canary": "Discord Canary.app",
 	"dev":    "Discord Development.app",
+}
+
+// Function to expand ~ in a path to the home directory
+func ExpandTilde(path string) string {
+	if strings.HasPrefix(path, "~") {
+		home, _ := os.UserHomeDir()
+		return strings.Replace(path, "~", home, 1)
+	}
+	return path
 }
 
 func ParseDiscord(p, branch string) *DiscordInstall {
@@ -46,6 +56,8 @@ func ParseDiscord(p, branch string) *DiscordInstall {
 
 func FindDiscords() []any {
 	var discords []any
+
+	// Check /Applications folder
 	for branch, dirname := range macosNames {
 		p := "/Applications/" + dirname
 		if discord := ParseDiscord(p, branch); discord != nil {
@@ -53,6 +65,17 @@ func FindDiscords() []any {
 			discords = append(discords, discord)
 		}
 	}
+
+	// Check ~/Applications folder
+	homeApplications := ExpandTilde("~/Applications")
+	for branch, dirname := range macosNames {
+		p := path.Join(homeApplications, dirname)
+		if discord := ParseDiscord(p, branch); discord != nil {
+			fmt.Println("Found Discord Install at", p)
+			discords = append(discords, discord)
+		}
+	}
+
 	return discords
 }
 
